@@ -13,8 +13,12 @@
 * pip install bs4
 
 ### 用法
+```bash
 python autofillconfig.py fill_config path
-
+```
 （path是gui-config.json文件的路径）
 
-例如：python autofillconfig.py fill_config E:\ssr-4.1.4-win\gui-config.json
+例如：
+```bash
+python autofillconfig.py fill_config E:\ssr-4.1.4-win\gui-config.json
+```
