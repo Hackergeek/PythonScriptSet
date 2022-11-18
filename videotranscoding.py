@@ -3,30 +3,36 @@
 
 import os
 import os.path
-
 import click
-import tinify
+import sh
 
-tinify.key = "在此处填写你申请的API"  # API KEY
 version = "1.0.0"  # 版本
+fileSuffixArray = ['.mp4', '.h264']
+# ffmpeg = sh.Command("/usr/local/bin/ffmpeg"))
+ffmpeg = sh.Command("ffmpeg")
 
 
-# 压缩的核心
-def compress_core(inputFile, outputFile, img_width):
-    print("start compress %s" % inputFile)
-    source = tinify.from_file(inputFile)
-    before_compress_size = os.path.getsize(inputFile)
-    if img_width != -1:
-        resized = source.resize(method="scale", width=img_width)
-        resized.to_file(outputFile)
-    else:
-        source.to_file(outputFile)
-    after_compress_size = os.path.getsize(outputFile)
-    print("compressed %sKB" % ((before_compress_size-after_compress_size)/1024))
+def process_output(line, stdin, process):
+    print(line, end='')
+    if "ERROR" in line:
+        process.kill()
+        return True
+
+
+# 转码的核心
+def compress_core(inputFile, outputFile, codec):
+    print("start convert %s" % inputFile)
+    #ffmpeg -i temp.mp4 -c:v libx265 -c:a copy temp1.h264
+    before_convert_size = os.path.getsize(inputFile)
+    process = ffmpeg("-i", inputFile, "-c:v", codec, "-c:a", "copy", outputFile, _out=process_output,
+                     _err=process_output, _bg=True)
+    process.wait()
+    after_convert_size = os.path.getsize(outputFile)
+    print("convert finish save %sKB" % ((before_convert_size-after_convert_size)/1024))
 
 
 # 压缩一个文件夹下的图片
-def compress_path(path, width, recursive, overwrite):
+def convert_path(path, codec, recursive, overwrite):
     print("compress_path-------------------------------------")
     if not os.path.isdir(path):
         print("这不是一个文件夹，请输入文件夹的正确路径!")
@@ -44,7 +50,7 @@ def compress_path(path, width, recursive, overwrite):
             for name in files:
                 fileName, fileSuffix = os.path.splitext(name)
                 fileSuffix = str(fileSuffix).lower()
-                if fileSuffix == '.png' or fileSuffix == '.jpg' or fileSuffix == '.jpeg':
+                if fileSuffix in fileSuffixArray:
                     inputFile = root + '/' + name
                     outputFile = inputFile
                     if not overwrite:
@@ -54,13 +60,13 @@ def compress_path(path, width, recursive, overwrite):
                             pass
                         else:
                             os.mkdir(toFullPath)
-                    compress_core(inputFile, outputFile, width)
+                    compress_core(inputFile, outputFile, codec)
             if not recursive:
                 break  # 仅遍历当前目录
 
 
 # 仅压缩指定文件
-def compress_file(inputFile, width, overwrite):
+def convert_file(inputFile, codec, overwrite):
     print("compress_file-------------------------------------")
     if not os.path.isfile(inputFile):
         print("这不是一个文件，请输入文件的正确路径!")
@@ -70,31 +76,31 @@ def compress_file(inputFile, width, overwrite):
     basename = os.path.basename(inputFile)
     fileName, fileSuffix = os.path.splitext(basename)
     fileSuffix = str(fileSuffix).lower()
-    if fileSuffix == '.png' or fileSuffix == '.jpg' or fileSuffix == '.jpeg':
+    if fileSuffix in fileSuffixArray:
         if overwrite:
-            compress_core(inputFile, inputFile, width)
+            compress_core(inputFile, inputFile, codec)
         else:
-            compress_core(inputFile, dirname + "/tiny_" + basename, width)
+            compress_core(inputFile, dirname + "/tiny_" + basename, codec)
     else:
         print("不支持该文件类型!")
 
 
 @click.command()
-@click.option('-f', "--file", type=str, default=None, help="单个文件压缩")
-@click.option('-d', "--dir", type=str, default=None, help="被压缩的文件夹")
-@click.option('-r', "--recursive", is_flag=True, help="是否递归遍历压缩")
-@click.option('-w', "--width", type=int, default=-1, help="图片宽度，默认不变")
-@click.option('-o', "--overwrite", is_flag=True, help="是否覆盖原文件")
-def run(file, dir, recursive, width, overwrite):
-    print("GcsSloop TinyPng V%s" % version)
+@click.option('-f', "--file", type=str, default=None, help="单个文件转码")
+@click.option('-d', "--directory", type=str, default=None, help="被转码的文件夹")
+@click.option('-r', "--recursive", is_flag=True, help="是否递归遍历转码")
+@click.option('-c', "--codec", type=str, default="libx265", help="指定编码，默认为libx265")
+# @click.option('-o', "--overwrite", is_flag=True, help="是否覆盖原文件")
+def run(file, directory, recursive, codec, overwrite=None):
+    print("Skyward video transcoding V%s" % version)
     if file is not None:
-        compress_file(file, width, overwrite)  # 仅压缩一个文件
+        convert_file(file, codec, overwrite)  # 仅转码一个文件
         pass
-    elif dir is not None:
-        compress_path(dir, width, recursive, overwrite)  # 压缩指定目录下的文件
+    elif directory is not None:
+        convert_path(directory, codec, recursive, overwrite)  # 转码指定目录下的文件
         pass
     else:
-        compress_path(os.getcwd(), width, recursive, overwrite)  # 压缩当前目录下的文件
+        convert_path(os.getcwd(), codec, recursive, overwrite)  # 转码当前目录下的文件
     print("结束!")
 
 
