@@ -2,23 +2,16 @@
 
 ## kugou.py——获取酷狗TOP500歌曲信息
 
-## autofillconfig.py
-
-### 介绍
-获取免费代理服务器页面信息，并自动填写gui-config.json
-
-### 环境配置
-* pip install requests
-* pip install fire
-* pip install bs4
-
-### 用法
+## tinypng
+使用tinypng压缩图片
 ```bash
-python autofillconfig.py fill_config path
-```
-（path是gui-config.json文件的路径）
+Usage: tinypng.py [OPTIONS]
 
-例如：
-```bash
-python autofillconfig.py fill_config E:\ssr-4.1.4-win\gui-config.json
+Options:
+  -f, --file TEXT      单个文件压缩
+  -d, --dir TEXT       被压缩的文件夹
+  -r, --recursive      是否递归遍历压缩
+  -w, --width INTEGER  图片宽度，默认不变
+  -o, --overwrite      是否覆盖原文件
+  --help               Show this message and exit.
 ```
