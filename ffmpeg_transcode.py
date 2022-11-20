@@ -13,7 +13,7 @@ def get_seconds(time):
     return ts
 
 
-def do_ffmpeg_transcode(cmd):
+def do_ffmpeg_transcode_cmd(cmd):
     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, bufsize=0, universal_newlines=True, shell=True)
     return compute_progress_and_send_progress(process)
 
@@ -24,7 +24,7 @@ def do_ffmpeg_transcode(args=[]):
 
 
 def print_progress(progress):
-    print("\r进度:{:.2f}%:".format(progress), "▓" * math.ceil(progress), end="")
+    print("\r进度:{}%:".format(round(progress, 2)), "▓" * math.ceil(progress), end="")
     sys.stdout.flush()
 
 
@@ -63,4 +63,4 @@ def compute_progress_and_send_progress(process):
     return True
 
 
-# do_ffmpeg_transcode("ffmpeg -i 1.mp4 -c:v hevc -c:a copy 2.mp4")
+do_ffmpeg_transcode_cmd("ffmpeg -i 1.mp4 -c:v hevc -c:a copy 2.mp4")

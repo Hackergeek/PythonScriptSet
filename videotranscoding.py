@@ -84,9 +84,9 @@ def convert_file(input_file, codec, overwrite):
         outputFile = dirname + '/convert_' + basename
 
         result = compress_core(input_file, outputFile, codec)
-        # if overwrite and result:
-            # os.remove(input_file)
-            # os.rename(outputFile, input_file)
+        if overwrite and result:
+            os.remove(input_file)
+            os.rename(outputFile, input_file)
         if not result and os.path.exists(outputFile) and os.path.getsize(outputFile) < 100:
             os.remove(outputFile)
 
