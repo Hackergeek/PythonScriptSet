@@ -33,9 +33,7 @@ def compress_path(path, width, recursive, overwrite):
         return
     else:
         fromFilePath = path  # 源路径
-        toFilePath = path + "/tiny"  # 输出路径
         print("fromFilePath=%s" % fromFilePath)
-        print("toFilePath=%s" % toFilePath)
 
         for root, dirs, files in os.walk(fromFilePath):
             print("root = %s" % root)
@@ -48,12 +46,13 @@ def compress_path(path, width, recursive, overwrite):
                     inputFile = root + '/' + name
                     outputFile = inputFile
                     if not overwrite:
-                        toFullPath = toFilePath + root[len(fromFilePath):]
-                        outputFile = toFullPath + '/' + name
-                        if os.path.isdir(toFullPath):
+                        toFilePath = root + "/tiny"  # 输出路径
+                        print("toFilePath=%s" % toFilePath)
+                        outputFile = toFilePath + '/' + name
+                        if os.path.isdir(toFilePath):
                             pass
                         else:
-                            os.mkdir(toFullPath)
+                            os.mkdir(toFilePath)
                     compress_core(inputFile, outputFile, width)
             if not recursive:
                 break  # 仅遍历当前目录
