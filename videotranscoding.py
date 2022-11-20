@@ -37,13 +37,13 @@ def compress_core(input_file, output_file, codec):
         # process.wait()
         # result = ffmpeg.do_ffmpeg_transcode(f"ffmpeg -i {input_file} -c:v {codec} -threads 4 -c:a copy {output_file}")
         result = ffmpeg.do_ffmpeg_transcode(["ffmpeg", "-i", input_file, "-c:v", codec, "-threads", "4", "-c:a", "copy",
-                                            output_file])
+                                             output_file])
         if not result:
             print("源文件视频编码与目标文件视频编码一致，无需转码")
             return result
         if os.path.exists(output_file):
             after_convert_size = os.path.getsize(output_file)
-            print("convert finish save %sKB" % ((before_convert_size - after_convert_size) / 1024))
+            print("\n convert finish save %sKB" % ((before_convert_size - after_convert_size) / 1024))
         return True
     except sh.ErrorReturnCode_1:
         os.remove(output_file)
@@ -53,34 +53,32 @@ def compress_core(input_file, output_file, codec):
 # 转码一个文件夹下的视频
 def convert_path(path, codec, recursive, overwrite):
     if not os.path.isdir(path):
-        print("这不是一个文件夹，请输入文件夹的正确路径!")
+        print("这不是一个文件夹，请输入文件夹的正确路径!", path)
         return
-    else:
-        fromFilePath = path  # 源路径
-        print("fromFilePath=%s" % fromFilePath)
+    fromFilePath = path  # 源路径
+    print("fromFilePath=%s" % fromFilePath)
+    for root, dirs, files in os.walk(fromFilePath):
+        # print("root = %s" % root)
+        # print("dirs = %s" % dirs)
+        # print("files= %s" % files)
 
-        for root, dirs, files in os.walk(fromFilePath):
-            # print("root = %s" % root)
-            # print("dirs = %s" % dirs)
-            # print("files= %s" % files)
-
-            for name in files:
-                convert_file(root + os.path.sep + name, codec, overwrite)
-            if not recursive:
-                break  # 仅遍历当前目录
+        for name in files:
+            convert_file(root + os.path.sep + name, codec, overwrite)
+        if not recursive:
+            break  # 仅遍历当前目录
 
 
 # 仅转码指定文件
 def convert_file(input_file, codec, overwrite):
     if not os.path.isfile(input_file):
-        print("这不是一个文件，请输入文件的正确路径!")
+        print("这不是一个文件，请输入文件的正确路径!", input_file)
         return
     dirname = os.path.dirname(input_file)
     basename = os.path.basename(input_file)
     fileName, fileSuffix = os.path.splitext(basename)
     fileSuffix = str(fileSuffix).lower()
     if fileSuffix in fileSuffixArray:
-        print("file = %s" % input_file)
+        # print("file = %s" % input_file)
         outputFile = dirname + '/convert_' + basename
 
         result = compress_core(input_file, outputFile, codec)
@@ -89,6 +87,7 @@ def convert_file(input_file, codec, overwrite):
             os.rename(outputFile, input_file)
         if not result and os.path.exists(outputFile) and os.path.getsize(outputFile) < 100:
             os.remove(outputFile)
+
 
 @click.command()
 @click.option('-f', "--file", type=str, default=None, help="单个文件转码")

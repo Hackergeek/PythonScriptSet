@@ -24,7 +24,7 @@ def do_ffmpeg_transcode(args=[]):
 
 
 def print_progress(progress):
-    print("\r进度:{}%:".format(round(progress, 2)), "▓" * math.ceil(progress), end="")
+    print("\r进度:{}%:".format(round(progress, 2)), "▓" * math.ceil(progress), end='')
     sys.stdout.flush()
 
 
