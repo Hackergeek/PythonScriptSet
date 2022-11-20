@@ -15,7 +15,12 @@ def get_seconds(time):
 
 def do_ffmpeg_transcode(cmd):
     process = subprocess.Popen(cmd, stderr=subprocess.PIPE, bufsize=0, universal_newlines=True, shell=True)
-    compute_progress_and_send_progress(process)
+    return compute_progress_and_send_progress(process)
+
+
+def do_ffmpeg_transcode(args=[]):
+    process = subprocess.Popen(args, stderr=subprocess.PIPE, bufsize=0, universal_newlines=True, shell=False)
+    return compute_progress_and_send_progress(process)
 
 
 def print_progress(progress):
@@ -25,14 +30,27 @@ def print_progress(progress):
 
 def compute_progress_and_send_progress(process):
     duration = None
+    input_codec = None
+    output_codec = None
     while process.poll() is None:
         line = process.stderr.readline().strip()
         if line:
             # print(line)
             duration_res = re.search(r'Duration: (?P<duration>\S+)', line)
+            codec_res = re.search(r'Video: (?P<video>\S+)', line)
             if duration_res is not None:
                 duration = duration_res.groupdict()['duration']
                 duration = re.sub(r',', '', duration)
+            # TODO 支持多路视频流，目前只支持一路视频流的判断
+            if codec_res is not None:
+                if input_codec is None:
+                    input_codec = codec_res.groupdict()['video']
+                else:
+                    output_codec = codec_res.groupdict()['video']
+            if input_codec is not None and input_codec == output_codec:
+                # print("源文件视频编码与目标文件视频编码一致，无需转码")
+                process.kill()
+                return False
 
             result = re.search(r'time=(?P<time>\S+)', line)
             if result is not None and duration is not None:
@@ -42,5 +60,7 @@ def compute_progress_and_send_progress(process):
                 allTime = get_seconds(duration)
                 progress = currentTime * 100 / allTime
                 print_progress(progress)
+    return True
+
 
 # do_ffmpeg_transcode("ffmpeg -i 1.mp4 -c:v hevc -c:a copy 2.mp4")
