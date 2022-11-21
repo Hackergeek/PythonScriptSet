@@ -8,7 +8,7 @@ import sh
 import ffmpeg_transcode as ffmpeg
 
 version = "1.0.0"  # 版本
-fileSuffixArray = ['.mp4', '.h264']
+fileSuffixArray = ['.mp4']
 
 
 # ffmpeg = sh.Command("/usr/local/bin/ffmpeg"))
@@ -36,7 +36,7 @@ def compress_core(input_file, output_file, codec):
         #                  _err=process_output, _bg=True)  # ffmpeg的日志输出是stderr
         # process.wait()
         # result = ffmpeg.do_ffmpeg_transcode(f"ffmpeg -i {input_file} -c:v {codec} -threads 4 -c:a copy {output_file}")
-        result = ffmpeg.do_ffmpeg_transcode(["ffmpeg", "-i", input_file, "-c:v", codec, "-threads", "4", "-c:a", "copy",
+        result = ffmpeg.do_ffmpeg_transcode(["ffmpeg", "-i", input_file, "-c:v", codec, "-threads", "8", "-c:a", "copy",
                                              output_file])
         if not result:
             print("源文件视频编码与目标文件视频编码一致，无需转码")
