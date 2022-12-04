@@ -6,9 +6,10 @@ import os.path
 import click
 import sh
 import ffmpeg_transcode as ffmpeg
+import time
 
 version = "1.0.0"  # 版本
-fileSuffixArray = ['.mp4']
+fileSuffixArray = ['.mp4', '.mkv', '.mov']
 
 
 # ffmpeg = sh.Command("/usr/local/bin/ffmpeg"))
@@ -21,6 +22,15 @@ def process_output(line, stdin, process):
         process.kill()
         return True
     return False
+
+
+def storage_format_size(size):
+    kb_size = 1024
+    mb_size = 1024 * kb_size
+    if size > mb_size:
+        return str(round(size/mb_size, 2)) + "MB"
+    else:
+        return str(round(size/kb_size)) + "KB"       
 
 
 # 转码的核心
@@ -43,7 +53,7 @@ def compress_core(input_file, output_file, codec):
             return result
         if os.path.exists(output_file):
             after_convert_size = os.path.getsize(output_file)
-            print("\n convert finish save %sKB" % ((before_convert_size - after_convert_size) / 1024))
+            print("\n convert finish save %s" % (storage_format_size(before_convert_size - after_convert_size)))
         return True
     except sh.ErrorReturnCode_1:
         os.remove(output_file)
@@ -81,7 +91,7 @@ def convert_file(input_file, codec, overwrite):
         # print("file = %s" % input_file)
         outputFile = dirname + '/convert_' + basename
 
-        result = compress_core(input_file, outputFile, codec)
+        result = compress_core(input_file, outputFile, codec) and os.path.exists(outputFile)
         if overwrite and result:
             os.remove(input_file)
             os.rename(outputFile, input_file)
@@ -91,9 +101,9 @@ def convert_file(input_file, codec, overwrite):
 
 @click.command()
 @click.option('-f', "--file", type=str, default=None, help="单个文件转码")
-@click.option('-d', "--directory", type=str, default=None, help="被转码的文件夹")
+@click.option('-d', "--directory", type=str, default=None, help="指定文件夹下的视频文件转码")
 @click.option('-r', "--recursive", is_flag=True, help="是否递归遍历转码")
-@click.option('-c', "--codec", type=str, default="libx265", help="指定编码，默认为libx265")
+@click.option('-c', "--codec", type=str, default="hevc", help="指定编码，默认为hevc(libx265)")
 @click.option('-o', "--overwrite", is_flag=True, help="是否覆盖原文件")
 def run(file, directory, recursive, codec, overwrite):
     print("Skyward video transcoding V%s" % version)
