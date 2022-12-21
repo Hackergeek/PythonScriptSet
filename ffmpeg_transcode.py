@@ -23,8 +23,8 @@ def do_ffmpeg_transcode(args=[]):
     return compute_progress_and_send_progress(process)
 
 
-def print_progress(progress):
-    print("\r进度:{}%:".format(round(progress, 2)), "▓" * math.ceil(progress), end='')
+def print_progress(duration, progress):
+    print("\r视频时长:{} 进度:{}%:".format(duration, round(progress, 2)),"▓" * math.ceil(progress/2), end='')
     sys.stdout.flush()
 
 
@@ -40,7 +40,9 @@ def compute_progress_and_send_progress(process):
             print("decode error")
             pass
         if line:
-            # print(line)
+            if "Invalid data found when processing input" in line:
+                process.kill()
+                raise Exception(line)
 
             duration_res = re.search(r'Duration: (?P<duration>\S+)', line)
             # codec_res = re.search(r'Video: (?P<video>\S+)', line)
@@ -68,9 +70,7 @@ def compute_progress_and_send_progress(process):
                 currentTime = get_seconds(elapsed_time)
                 allTime = get_seconds(duration)
                 progress = currentTime * 100 / allTime
-                print_progress(progress)
-            # print("\r",line, end='')
-            # sys.stdout.flush()
+                print_progress(duration, progress)
     return True
 
 

@@ -6,14 +6,24 @@ import os.path
 import click
 import sh
 import ffmpeg_transcode as ffmpeg
+import datetime
 import time
 
 version = "1.0.0"  # 版本
 fileSuffixArray = ['.mp4', '.mkv', '.mov']
-
+success_count = 0
+skip_count = 0
+fail_list = []
+total_count = 0
 
 # ffmpeg = sh.Command("/usr/local/bin/ffmpeg"))
 # ffmpeg = sh.Command("ffmpeg")
+
+def transform_time(seconds):
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    time = "%02d:%02d:%02d" % (h, m, s)
+    return time
 
 
 def process_output(line, stdin, process):
@@ -27,7 +37,7 @@ def process_output(line, stdin, process):
 def storage_format_size(size):
     kb_size = 1024
     mb_size = 1024 * kb_size
-    if size > mb_size:
+    if size >= mb_size:
         return str(round(size/mb_size, 2)) + "MB"
     else:
         return str(round(size/kb_size)) + "KB"       
@@ -39,8 +49,12 @@ def compress_core(input_file, output_file, codec):
         print("目标文件已存在")
         return False
     print("start convert %s" % input_file)
+    global total_count
+    global success_count
+    total_count += 1
     # ffmpeg -i temp.mp4 -c:v libx265 -c:a copy temp1.h264
     before_convert_size = os.path.getsize(input_file)
+    start_time = time.time()
     try:
         # process = ffmpeg("-i", inputFile, "-c:v", codec, "-threads", 4, "-c:a", "copy", outputFile, _out=process_output,
         #                  _err=process_output, _bg=True)  # ffmpeg的日志输出是stderr
@@ -50,15 +64,21 @@ def compress_core(input_file, output_file, codec):
                                              output_file])
         if not result:
             print("源文件视频编码与目标文件视频编码一致，无需转码")
+            global skip_count
+            skip_count += 1
             return result
         if os.path.exists(output_file):
             after_convert_size = os.path.getsize(output_file)
-            print("\n convert finish save %s" % (storage_format_size(before_convert_size - after_convert_size)))
+            end_time = time.time()
+            success_count += 1
+            print("\n convert finish save size:{}, cost time:{}".format(storage_format_size(before_convert_size - after_convert_size), transform_time(end_time - start_time)))
         return True
-    except sh.ErrorReturnCode_1:
+    except KeyboardInterrupt:
         os.remove(output_file)
-        return False
-
+        print("\n 程序运行结束")
+        exit(-1)
+    except Exception:
+        fail_list.append(input_file)        
 
 # 转码一个文件夹下的视频
 def convert_path(path, codec, recursive, overwrite):
@@ -115,6 +135,11 @@ def run(file, directory, recursive, codec, overwrite):
         pass
     else:
         convert_path(os.getcwd(), codec, recursive, overwrite)  # 转码当前目录下的文件
+    
+    print("{} files have been processed, {} succeed, {} skipped, {} failure.".format(total_count, success_count, skip_count, len(fail_list)))
+    print("The following are details of the failure information:")
+    for fail_file in fail_list:
+        print(fail_file)
     print("结束!")
 
 
