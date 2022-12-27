@@ -32,11 +32,9 @@ Options:
 ### 用法
 
 ```bash
-Usage: videotranscoding.py [OPTIONS]
+Usage: videotranscoding.py [OPTIONS] [FILE_LIST]...
 
 Options:
-  -f, --file TEXT       单个文件转码
-  -d, --directory TEXT  指定文件夹下的视频文件转码
   -r, --recursive       是否递归遍历转码
   -c, --codec TEXT      指定编码，默认为hevc(libx265)
   -o, --overwrite       是否覆盖原文件
