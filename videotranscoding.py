@@ -15,9 +15,18 @@ success_count = 0
 skip_count = 0
 fail_list = []
 total_count = 0
+total_save_size = 0
 
 # ffmpeg = sh.Command("/usr/local/bin/ffmpeg"))
 # ffmpeg = sh.Command("ffmpeg")
+
+
+def print_result():
+    print("{} files have been processed, {} succeed, {} skipped, {} failure, save size:{}.".format(total_count, success_count, skip_count, len(fail_list), storage_format_size(total_save_size)))
+    if len(fail_list) > 0:
+        print("The following are details of the failure information:")
+        for fail_file in fail_list:
+            print(fail_file)
 
 def transform_time(seconds):
     m, s = divmod(seconds, 60)
@@ -37,6 +46,9 @@ def process_output(line, stdin, process):
 def storage_format_size(size):
     kb_size = 1024
     mb_size = 1024 * kb_size
+    gb_size = 1024 * mb_size
+    if size >= gb_size:
+        return str(round(size/gb_size, 2)) + "GB"
     if size >= mb_size:
         return str(round(size/mb_size, 2)) + "MB"
     else:
@@ -44,7 +56,7 @@ def storage_format_size(size):
 
 
 # 转码的核心
-def compress_core(input_file, output_file, codec):
+def convert_core(input_file, output_file, codec):
     if os.path.exists(output_file):
         print("目标文件已存在")
         return False
@@ -63,7 +75,7 @@ def compress_core(input_file, output_file, codec):
         result = ffmpeg.do_ffmpeg_transcode(["ffmpeg", "-i", input_file, "-c:v", codec, "-threads", "8", "-c:a", "copy",
                                              output_file])
         if not result:
-            print("源文件视频编码与目标文件视频编码一致，无需转码")
+            print("The video encoding of the source file is consistent with that of the target file without transcoding")
             global skip_count
             skip_count += 1
             return result
@@ -71,19 +83,24 @@ def compress_core(input_file, output_file, codec):
             after_convert_size = os.path.getsize(output_file)
             end_time = time.time()
             success_count += 1
-            print("\n convert finish save size:{}, cost time:{}".format(storage_format_size(before_convert_size - after_convert_size), transform_time(end_time - start_time)))
+            save_size = before_convert_size - after_convert_size
+            global total_save_size
+            total_save_size += save_size
+            print("\n convert finish save size:{}, cost time:{}".format(storage_format_size(save_size), transform_time(end_time - start_time)))
         return True
     except KeyboardInterrupt:
         os.remove(output_file)
-        print("\n 程序运行结束")
+        total_count -= 1
+        print_result()
+        print("\n键盘中断，程序运行结束")
         exit(-1)
     except Exception:
         fail_list.append(input_file)        
 
 # 转码一个文件夹下的视频
-def convert_path(path, codec, recursive, overwrite):
+def convert(path, codec, recursive, overwrite):
     if not os.path.isdir(path):
-        print("这不是一个文件夹，请输入文件夹的正确路径!", path)
+        convert_file(path, codec, overwrite)
         return
     fromFilePath = path  # 源路径
     print("fromFilePath=%s" % fromFilePath)
@@ -111,7 +128,7 @@ def convert_file(input_file, codec, overwrite):
         # print("file = %s" % input_file)
         outputFile = dirname + '/convert_' + basename
 
-        result = compress_core(input_file, outputFile, codec) and os.path.exists(outputFile)
+        result = convert_core(input_file, outputFile, codec) and os.path.exists(outputFile)
         if overwrite and result:
             os.remove(input_file)
             os.rename(outputFile, input_file)
@@ -120,27 +137,20 @@ def convert_file(input_file, codec, overwrite):
 
 
 @click.command()
-@click.option('-f', "--file", type=str, default=None, help="单个文件转码")
-@click.option('-d', "--directory", type=str, default=None, help="指定文件夹下的视频文件转码")
 @click.option('-r', "--recursive", is_flag=True, help="是否递归遍历转码")
 @click.option('-c', "--codec", type=str, default="hevc", help="指定编码，默认为hevc(libx265)")
 @click.option('-o', "--overwrite", is_flag=True, help="是否覆盖原文件")
-def run(file, directory, recursive, codec, overwrite):
+@click.argument("file_list", nargs=-1, type=str, default=None)
+def run(recursive, codec, overwrite, file_list):
     print("Skyward video transcoding V%s" % version)
-    if file is not None:
-        convert_file(file, codec, overwrite)  # 仅转码一个文件
-        pass
-    elif directory is not None:
-        convert_path(directory, codec, recursive, overwrite)  # 转码指定目录下的文件
-        pass
+    if len(file_list) > 0:
+        for file in file_list:
+            convert(file, codec, recursive, overwrite)  # 转码指定目录下的文件
     else:
-        convert_path(os.getcwd(), codec, recursive, overwrite)  # 转码当前目录下的文件
+        convert(os.getcwd(), codec, recursive, overwrite)  # 转码当前目录下的文件
     
-    print("{} files have been processed, {} succeed, {} skipped, {} failure.".format(total_count, success_count, skip_count, len(fail_list)))
-    print("The following are details of the failure information:")
-    for fail_file in fail_list:
-        print(fail_file)
-    print("结束!")
+    print_result()
+    print("End!")
 
 
 if __name__ == "__main__":
