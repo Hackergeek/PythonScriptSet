@@ -10,7 +10,7 @@ import datetime
 import time
 
 version = "1.0.0"  # 版本
-fileSuffixArray = ['.mp4', '.mkv', '.mov']
+fileSuffixArray = ['.mp4', '.mkv', '.mov', '.flv']
 success_count = 0
 skip_count = 0
 fail_list = []
@@ -112,7 +112,7 @@ def convert(path, codec, recursive, overwrite):
         for name in files:
             convert_file(root + os.path.sep + name, codec, overwrite)
         if not recursive:
-            break  # 仅遍历当前目录
+            break
 
 
 # 仅转码指定文件
@@ -126,14 +126,15 @@ def convert_file(input_file, codec, overwrite):
     fileSuffix = str(fileSuffix).lower()
     if fileSuffix in fileSuffixArray:
         # print("file = %s" % input_file)
-        outputFile = dirname + '/convert_' + basename
-
-        result = convert_core(input_file, outputFile, codec) and os.path.exists(outputFile)
+        convert_output_file = dirname + '/convert_' + fileName + '.mp4'
+        output_file = dirname + os.sep + fileName + '.mp4'
+        
+        result = convert_core(input_file, convert_output_file, codec) and os.path.exists(convert_output_file)
         if overwrite and result:
             os.remove(input_file)
-            os.rename(outputFile, input_file)
-        if not result and os.path.exists(outputFile) and os.path.getsize(outputFile) < 100:
-            os.remove(outputFile)
+            os.rename(convert_output_file, output_file)
+        if not result and os.path.exists(convert_output_file) and os.path.getsize(convert_output_file) < 100:
+            os.remove(convert_output_file)
 
 
 @click.command()
